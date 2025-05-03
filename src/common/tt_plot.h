@@ -21,6 +21,15 @@ public:
     PlotManage(const PlotManage&) = delete;
     PlotManage& operator=(const PlotManage&) = delete;
 
+    void PlotSubplots(int rows, int cols) {
+        std::fprintf(m_gp, "reset\n");
+        std::fprintf(m_gp, "set multiplot layout %d,%d\n", rows, cols);
+    }
+
+    void PlotEndSubplots() {
+        std::fprintf(m_gp, "unset multiplot\n");
+    }
+
     template <typename... Args>
     void PlotPoints(const std::vector<std::tuple<Args...>>& data, const char* style = "points", const char* title = "Data") {
         std::fprintf(m_gp, "set title '%s'\n", title);
@@ -96,6 +105,7 @@ private:
 #define PLOT_POINTS(data, ...) PlotManage::GetInstance().PlotPoints(data, ##__VA_ARGS__)
 #define PLOT_VECTORS(x_start, y_start, x_end, y_end, ...) PlotManage::GetInstance().PlotVectors(x_start, y_start, x_end, y_end, ##__VA_ARGS__)
 #define PLOT_GRID(grid, width, height, ...) PlotManage::GetInstance().PlotGrid(grid, width, height, ##__VA_ARGS__)
-
+#define PLOT_SUBPLOTS(rows, cols) PlotManage::GetInstance().PlotSubplots(rows, cols)
+#define PLOT_END_SUBPLOTS() PlotManage::GetInstance().PlotEndSubplots()
 
 #endif // __COMMON_PLOT_H__

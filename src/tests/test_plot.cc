@@ -74,3 +74,15 @@ TEST(plot_clear, test) {
  
     PLOT_CLEAR();
 }
+
+TEST(plot_sub, test) {
+    std::vector<std::tuple<float>> data;
+    for(int i = 0; i < 100; i++) data.push_back(100-i);
+
+    PLOT_SUBPLOTS(1, 2); 
+
+    PLOT_POINTS(data, STYLE_DOTS, "data1");
+    PLOT_POINTS(data, STYLE_LINES, "data2");
+
+    PLOT_END_SUBPLOTS();
+}
