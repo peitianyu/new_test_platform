@@ -1,8 +1,11 @@
 #ifndef __COMMON_PLOT_H__
 #define __COMMON_PLOT_H__
 
-#include <stdio.h>
-#include <stdlib.h>
+
+#include <iostream>
+#include <sstream>
+#include <memory>
+#include <cstdio>
 #include <vector>
 #include <thread>
 #include <chrono>
@@ -17,95 +20,70 @@ public:
         static PlotManage instance;
         return instance;
     }
-
     PlotManage(const PlotManage&) = delete;
     PlotManage& operator=(const PlotManage&) = delete;
 
-    void PlotSubplots(int rows, int cols) {
-        std::fprintf(m_gp, "reset\n");
-        std::fprintf(m_gp, "set multiplot layout %d,%d\n", rows, cols);
-    }
+    std::ostringstream& Oss() { return m_gp; }
 
-    void PlotEndSubplots() {
-        std::fprintf(m_gp, "unset multiplot\n");
-    }
-
-    template <typename... Args>
-    void PlotPoints(const std::vector<std::tuple<Args...>>& data, const char* style = "points", const char* title = "Data") {
-        std::fprintf(m_gp, "set title '%s'\n", title);
-        if constexpr (sizeof...(Args) == 1) {
-            std::fprintf(m_gp, "plot '-' w %s \n", style);
-            for (const auto& point : data) std::fprintf(m_gp, "%f\n", std::get<0>(point));
-        } else if constexpr (sizeof...(Args) == 2) {
-            std::fprintf(m_gp, "plot '-' w %s \n", style);
-            for (const auto& point : data) std::fprintf(m_gp, "%f %f\n", std::get<0>(point), std::get<1>(point));
-        } else if constexpr (sizeof...(Args) == 3) {
-            std::fprintf(m_gp, "splot '-' w %s \n", style);
-            for (const auto& point : data) std::fprintf(m_gp, "%f %f %f\n", std::get<0>(point), std::get<1>(point), std::get<2>(point));
+    void Show() const {
+        if (!m_pipe) {
+            m_pipe.reset(popen("gnuplot -persist", "w"));
+            if (!m_pipe) {
+                std::cerr << "无法打开管道到Gnuplot" << std::endl;
+                return;
+            }
         }
-        std::fprintf(m_gp, "e\n");
-        std::fflush(m_gp);
+
+        std::string script = m_gp.str();
+        std::fprintf(m_pipe.get(), "%s", script.c_str());
+        std::fflush(m_pipe.get());
     }
 
-    void PlotVectors(const std::vector<float>& x_start, const std::vector<float>& y_start, 
-        const std::vector<float>& x_end, const std::vector<float>& y_end, const char* color, const char* title = "Vectors") {
-        std::fprintf(m_gp, "set title '%s' \n", title);
-        std::fprintf(m_gp, "set style arrow 1 head filled size screen 0.03,15,45 lt rgb '%s'\n", color);
-        std::fprintf(m_gp, "plot '-' with vectors arrowstyle 1 \n");
-        for (size_t k = 0; k < x_start.size(); k++) 
-            std::fprintf(m_gp, "%f %f %f %f\n", x_start[k], y_start[k], x_end[k], y_end[k]);
-        std::fprintf(m_gp, "e\n");
-        std::fflush(m_gp);
-    }
-
-    void PlotGrid(const std::vector<std::vector<float>> &grid, int width, int height, const char* title = "Grid") {
-        std::fprintf(m_gp, "set title '%s' \n", title);
-        std::fprintf(m_gp, "set view map \n");
-        std::fprintf(m_gp, "set palette rgbformulae 33,13,10 \n");
-        std::fprintf(m_gp, "plot '-' matrix with image \n");
-        
-        for(int i = 0; i < height; i++) {
-            for(int j = 0; j < width; j++) std::fprintf(m_gp, "%f ", grid[i][j]);
-            std::fprintf(m_gp, "\n");
-        }
-        std::fprintf(m_gp, "e\n");
-        std::fflush(m_gp);
-    }
-
-    void PlotClear() {
-        std::fprintf(m_gp, "clear\n");
-    }
 private:
-    FILE *m_gp;
+    std::ostringstream m_gp;
+    mutable std::unique_ptr<FILE, decltype(&pclose)> m_pipe{nullptr, pclose};
 
     PlotManage() {
-        m_gp = popen("gnuplot -persist", "w");
-        std::fprintf(m_gp, "set mouse \n");
-        std::fprintf(m_gp, "set key left \n");
-        std::fprintf(m_gp, "bind 'q' 'exit'\n");
-        std::fflush(m_gp);
+        m_gp << "set mouse\n";
+        m_gp << "set key left\n";
+        m_gp << "bind 'q' 'exit'\n";
     }
 
-    ~PlotManage() { pclose(m_gp); }
+    ~PlotManage() {}
 };
 
-#define STYLE_POINTS "points"
-#define STYLE_LINES "lines"
-#define STYLE_LINES_POINTS "linespoints"
-#define STYLE_IMPULSES "impulses"
-#define STYLE_DOTS "dots"
-#define STYLE_BOXES "boxes"
-#define STYLE_HISTOGRAM "histogram"
-#define STYLE_IMAGE "image"
-#define STYLE_VECTOR "vector"
-#define STYLE_LABEL "label"
-#define STYLE_COMMON "points pt 7 ps 1 lc rgb 'red'"
 
-#define PLOT_CLEAR() PlotManage::GetInstance().PlotClear()
-#define PLOT_POINTS(data, ...) PlotManage::GetInstance().PlotPoints(data, ##__VA_ARGS__)
-#define PLOT_VECTORS(x_start, y_start, x_end, y_end, ...) PlotManage::GetInstance().PlotVectors(x_start, y_start, x_end, y_end, ##__VA_ARGS__)
-#define PLOT_GRID(grid, width, height, ...) PlotManage::GetInstance().PlotGrid(grid, width, height, ##__VA_ARGS__)
-#define PLOT_SUBPLOTS(rows, cols) PlotManage::GetInstance().PlotSubplots(rows, cols)
-#define PLOT_END_SUBPLOTS() PlotManage::GetInstance().PlotEndSubplots()
+template <typename... Args, typename O>
+O & __print(O &out, Args&&... args) {
+    auto a = {(out << std::forward<Args>(args), 0)...};
+    (void)a;
+    return out;
+}
+
+#define TYPE_POINTS "with points"
+#define TYPE_DOTS   "with dots"
+#define TYPE_LINES  "with lines"
+#define TYPE_VECTOR "with vectors arrowstyle 1"
+#define TYPE_MATRIX "matrix with image"
+
+#define OSS() PlotManage::GetInstance().Oss()
+#define INPUT_TYPE(type) "'-' " type ","
+#define SET_VECTOR_TYPE()                   __print(OSS(), "set style arrow 1 head filled size screen 0.03,15,45 lt rgb 'blue'\n")
+
+#define PLOT_SET_TITLE(title)               __print(OSS(), "set title '", title, "'\n")
+#define PLOT_INPUT_TYPE(input_type, ...)    __print(OSS(), "plot ", input_type, __VA_ARGS__, "\n")
+#define PLOT_DATA(data)                     __print(OSS(), data, "e\n");
+#define PLOT_CLEAR()                        OSS().str(std::string()), __print(OSS(), "clear\n");
+#define PLOT_SUBPLOTS(rows, cols)           __print(OSS(), "set multiplot layout ", rows, ",", cols, "\n")
+#define PLOT_END_SUBPLOTS()                 __print(OSS(), "unset multiplot\n")
+#define PLOT_SHOW()                         PlotManage::GetInstance().Show()
+
+#define PLOT_GRID(data, ...) do {                                   \
+    __print(OSS(), "set palette rgbformulae 33,13,10 \n");          \
+    __print(OSS(), "set size ratio -1\n");                          \
+    PLOT_INPUT_TYPE(INPUT_TYPE(TYPE_MATRIX), __VA_ARGS__);          \
+    PLOT_DATA(data);                                                \
+    PLOT_SHOW();                                                    \
+}while(0)
 
 #endif // __COMMON_PLOT_H__
