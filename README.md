@@ -30,10 +30,12 @@ ninja
     │   ├── tt_coroutine.h
     │   ├── tt_csv.h
     │   ├── tt_defer.h
+    │   ├── tt_enum_to_string.h
     │   ├── tt_flag.h
     │   ├── tt_ini.h
     │   ├── tt_log.h
     │   ├── tt_plot.h
+    │   ├── tt_serialize.h
     │   ├── tt_test.h
     │   ├── tt_tictoc.h
     │   └── tt_timer.h
@@ -42,13 +44,15 @@ ninja
         ├── test_bt.cc
         ├── test_coroutine.cc
         ├── test_csv.cc
+        ├── test_enum_to_string.cc
         ├── test_flag.cc
         ├── test_ini.cc
         ├── test_plot.cc
+        ├── test_serialize.cc
         ├── test_tictoc.cc
         └── test_timer.cc
 
-4 directories, 27 files
+4 directories, 31 files
 ```
 ## 测试
 ```
@@ -61,16 +65,18 @@ ninja
   [0] bt.test
   [1] coroutine.test
   [2] csv.test
-  [3] flag.test
-  [4] ini.test
-  [5] plot_x.test
-  [6] plot_xy.test
-  [7] plot_vectors.test
-  [8] plot_grid.test
-  [9] tictoc.test
-  [10] tictoc_auto.test
-  [11] tictoc_stats.test
-  [12] timer.test
+  [3] enum_to_string.test
+  [4] flag.test
+  [5] ini.test
+  [6] plot_x.test
+  [7] plot_xy.test
+  [8] plot_vectors.test
+  [9] plot_grid.test
+  [10] serialize.test
+  [11] tictoc.test
+  [12] tictoc_auto.test
+  [13] tictoc_stats.test
+  [14] timer.test
   [q] exit
 => Please enter a number or press [q] to exit: 
 ```
