@@ -60,10 +60,8 @@ public:
                 std::cout << "\033[31m" << "[ ERROR    ] Invalid choice." << "\033[0m" << std::endl;
                 return false;
             }
-        }else{
-            for(auto test: *m_tests) RunTest(test);
         }
-
+        
         return true;
     }
 
