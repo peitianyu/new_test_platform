@@ -4,8 +4,8 @@
 
 MAKE_ENUM(TestEnum,
     TEST_ENUM_1=0,
-    TEST_ENUM_2,
-    TEST_ENUM_3
+    TEST_ENUM_2=1,
+    TEST_ENUM_3=2
 );
 
 TEST(enum_to_string, test) {
